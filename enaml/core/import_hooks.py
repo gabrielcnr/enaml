@@ -13,6 +13,7 @@ import os
 import struct
 import sys
 import types
+import pkg_resources
 
 from .enaml_compiler import EnamlCompiler, COMPILER_VERSION
 from .parser import parse
@@ -232,6 +233,19 @@ class EnamlImporter(AbstractEnamlImporter):
                 if (os.path.exists(file_info.src_path) or
                     os.path.exists(file_info.cache_path)):
                     return cls(file_info)
+                else:
+                    # Trying to look inside resources in a Python egg
+                    if ('.egg' + os.sep) in stem:
+                        package_path = fullname.rsplit('.', 1)[0]
+                        try:
+                            enaml_path = pkg_resources.resource_filename(
+                                package_path, leaf)
+                        except KeyError:
+                            continue
+                        file_info = make_file_info(enaml_path)
+                        if (os.path.exists(file_info.src_path) or
+                            os.path.exists(file_info.cache_path)):
+                            return cls(file_info)
 
         # We're trying a load a package
         elif '.' in fullname:
